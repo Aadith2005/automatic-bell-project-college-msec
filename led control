@@ -1,0 +1,57 @@
+#include <WiFi.h>
+#include <WebServer.h>
+
+// WiFi credentials
+const char* ssid = "your-ssid";
+const char* password = "your-password";
+
+// Define the LED pin
+#define LED_PIN 22
+
+// Create an instance of the web server
+WebServer server(80);
+
+// Variable to track the LED state
+bool ledState = false;
+
+void setup() {
+  // Initialize Serial for debugging purposes
+  Serial.begin(115200);
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+
+  // Print ESP32's IP address
+  Serial.print("Connected to WiFi. IP address: ");
+  Serial.println(WiFi.localIP());
+
+  // Initialize the LED pin as an output
+  pinMode(LED_PIN, OUTPUT);
+
+  // Route for root / web page
+  server.on("/", HTTP_GET, []() {
+    server.send(200, "text/html", "<h1>ESP32 Web Server</h1><p><a href=\"/toggle\"><button>Toggle LED</button></a></p>");
+  });
+
+  // Route to toggle the LED
+  server.on("/toggle", HTTP_GET, []() {
+    // Toggle the LED state
+    ledState = !ledState;
+    // Set the LED according to the new state
+    digitalWrite(LED_PIN, ledState ? HIGH : LOW);
+    server.send(200, "text/plain", ledState ? "LED turned on" : "LED turned off");
+  });
+
+  // Start the server
+  server.begin();
+  Serial.println("Server started");
+}
+
+void loop() {
+  // Handle client requests
+  server.handleClient();
+}
